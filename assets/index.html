@@ -1,0 +1,140 @@
+<html>
+    <head>
+        <style type="text/css">
+            body {
+                font-size: 14px;
+                font-family: "Open Sans", Arial, Helvetica, sans-serif;
+                width:100%;
+                max-width: 376px;
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                padding: 16px;
+            }
+            p {
+                margin: 0;
+            }
+            #title {
+                flex: 0;
+                margin-top: 0;
+            }
+            #messages {
+                flex: 1 1 0;
+                border: solid 1px #ddd;
+                overflow: auto;
+                padding: 16px;
+            }
+            #messages .notification {
+                padding: 2px 0;
+                font-size: 12px;
+                color: #888;
+                background-color: #efefef;
+                text-align: center;
+                border-radius: 8px;
+                margin-bottom: 16px;
+            }
+            #messages .message .text {
+                background-color: #efefef;
+                border-radius: 8px;
+                padding: 8px;
+                margin-bottom: 16px;
+            }
+            #messages .message .title {
+                color: #999;
+                font-size: 11px;
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+            #message .message.self .title {
+                text-align: right;
+            }
+            #input {
+                flex: 0 0 80px;
+                border: solid 1px #ddd;
+                display: block;
+                width: 100%;
+                outline: none;
+                padding: 8px;
+            }
+        </style>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    </head>
+    <body>
+        <h2 align="center">P2P Chat</h2>
+        <p id="name" style="color:#ddd; margin: 8px 0"></p>
+        <div id="messages">
+            <div class="notification">You have joined the chat</div>
+        </div>
+        <p style="color:#ddd; margin: 8px 0">Press Shift+Enter to send</p>
+        <textarea id="input"></textarea>
+
+        <script>
+            var $input = $('#input'),
+                $messages = $('#messages'),
+                months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            $('#name').text('Logged in as ' + binding.data.name)
+            $input.on('keypress', function(e) {
+                if(e.which == 13 && e.shiftKey) {
+                    e.preventDefault();
+                    text  = $input.val();
+
+                    if(text.trim() == '') {
+                        return
+                    }
+
+                    binding.sendChat(text);
+                    $input.val('')
+
+                    createdDate = new Date();
+                    createDateString = createdDate.getDate() + '.' + months[createdDate.getMonth()]
+                    var markup = '<div class="message self"><p class="title">You &bull; <span data-time="' + Date.now() + '">just now</span></p><p class="text">' + nl2br(text) + '</p></div>';
+                    $messages.append(markup);
+                    $messages.scrollTop($messages.prop('scrollHeight'));
+                };
+            });
+
+            function receivedDisconnection(message) {
+                var markup = '<div class="notification">' + message.name + ' has left the chat</div>';
+                $messages.append(markup);
+                $messages.scrollTop($messages.prop('scrollHeight'));
+            }
+
+            function receivedIntroduction(message) {
+                var markup = '<div class="notification">' + message.name + ' has joined the chat</div>';
+                $messages.append(markup);
+                $messages.scrollTop($messages.prop('scrollHeight'));
+            }
+
+            function receivedChat(message) {
+                createdDate = new Date(message.created * 1000);
+                createDateString = createdDate.getDate() + '.' + months[createdDate.getMonth()]
+                var markup = '<div class="message"><p class="title">' + message.name + ' &bull; <span data-time="' + (message.created * 1000) + '">just now</span></p><p class="text">' + nl2br(message.text) + '</p></div>';
+                $messages.append(markup);
+                $messages.scrollTop($messages.prop('scrollHeight'));
+            }
+
+            function nl2br (str, is_xhtml) {
+                var breakTag = (is_xhtml || typeof is_xhtml === 'undefined') ? '<br ' + '/>' : '<br>';
+                return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1' + breakTag + '$2');
+            }
+
+            function updateTime() {
+                var now = Date.now();
+                $messages.find('.title span[data-time]').each(function(i, element) {
+                    $element = $(element)
+                    var diff = Math.floor((now - $element.data('time')) / 60000);
+                    if (diff === 0) {
+                        $element.text('just now');
+                    } else if (diff == 1) {
+                        $element.text('1 min ago');
+                    } else {
+                        $element.text(diff + ' mins ago');
+                    }
+                });
+                setTimeout(updateTime, 10000);
+            }
+            setTimeout(updateTime, 10000);
+        </script>
+    </body>
+</html>
